@@ -1,12 +1,22 @@
 {
+  "name": "小狗对话",
+  "short_name": "小狗",
+  "description": "和小狗聊天互动的小应用",
+  "start_url": "/",  
+  "display": "standalone",   
+  "theme_color": "#f5d5a4",   
   "background_color": "#fffef7",
-  "dir": "ltr",
-  "display": "standalone",
-  "name": "Dchat",
-  "orientation": "any",
-  "scope": "/",
-  "short_name": "Dct",
-  "start_url": "/",
-  "theme_color": "#f5d5a4",
-  "description": "试用小狗界面"
+  "lang"   "lang": "zh",
+  "icons": [
+    {
+      "src": "dog-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "dog-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
