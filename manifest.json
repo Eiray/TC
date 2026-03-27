@@ -1,0 +1,12 @@
+{
+  "background_color": "#fffef7",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Dchat",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Dct",
+  "start_url": "/",
+  "theme_color": "#f5d5a4",
+  "description": "试用小狗界面"
+}
