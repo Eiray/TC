@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>金毛 AI 伙伴</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- 引入 Three.js 用于生成粒子 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <!-- 粒子背景渲染层 -->
+    <canvas id="particleCanvas"></canvas>
+
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">THE GARDEN · GOLDEN AI</div>
+
+        <!-- 角色显示区 -->
+        <div class="character-zone">
+            <div class="glow"></div>
+            <!-- 这里先放一个表情或图片，之后可以换成 3D 模型 -->
+            <div class="dog-avatar">🦮</div> 
+        </div>
+
+        <!-- 对话展示区 -->
+        <div class="chat-display" id="chatDisplay">
+            <div class="ai-text" id="aiText">你好，我是你的金毛伙伴。今天想聊点什么？</div>
+            <div class="subtitle" id="aiSubtitle">Hello, I'm your Golden Retriever companion.</div>
+        </div>
+
+        <!-- 输入区 -->
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="输入文字与它对话..." autocomplete="off">
+            <button id="sendBtn">发送</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
