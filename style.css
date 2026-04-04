@@ -1,0 +1,77 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: #000; /* 纯黑底色 */
+    overflow: hidden;
+    font-family: "Microsoft YaHei", sans-serif;
+    color: white;
+}
+
+#particleCanvas {
+    position: fixed; top: 0; left: 0; z-index: -1;
+}
+
+.container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: radial-gradient(circle at center, rgba(35, 35, 60, 0.4) 0%, transparent 80%);
+}
+
+.header {
+    margin-top: 30px; font-size: 14px; letter-spacing: 4px; opacity: 0.6;
+}
+
+.character-zone {
+    flex: 1; display: flex; align-items: center; justify-content: center; position: relative;
+}
+
+/* 金毛下方的光晕 */
+.glow {
+    position: absolute; width: 400px; height: 400px;
+    /* background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%); */
+    background: radial-gradient(circle, rgba(255, 200, 50, 0.15) 0%, transparent 60%);
+    pointer-events: none; 
+    mix-blend-mode: screen; /* 让光晕更通透 */
+}
+
+.dog-avatar {
+    font-size: 120px; z-index: 10; filter: drop-shadow(0 0 20px rgba(255,255,255,0.2));
+}
+
+/* 对话框：毛玻璃效果 */
+.chat-display {
+    width: 80%; max-width: 600px;
+    padding: 30px; text-align: center;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(15px); /* 模糊背景 */
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 40px;
+    animation: fadeIn 1s ease-out;/* 增加这一行 */
+}
+
+.ai-text { font-size: 20px; margin-bottom: 10px; line-height: 1.5; }
+.subtitle { font-size: 14px; color: #888; }
+
+/* 输入区 */
+.input-area {
+    width: 100%; max-width: 500px; padding: 20px;
+    display: flex; gap: 10px; margin-bottom: 50px;
+}
+
+input {
+    flex: 1; background: rgba(255,255,255,0.1); border: none;
+    padding: 15px 20px; border-radius: 30px; color: white; outline: none;
+}
+
+button {
+    background: white; color: black; border: none; padding: 0 25px;
+    border-radius: 30px; cursor: pointer; font-weight: bold;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+

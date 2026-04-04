@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>BY-U-SIDE</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- 引入 Three.js 用于生成粒子 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- 在 three.min.js 之后添加 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>    
+</head>
+<body>
+    <!-- 粒子背景渲染层 -->
+    <canvas id="particleCanvas"></canvas>
+
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">STAY WITH YOU · BE  WITH  ME</div>
+
+        <!-- 角色显示区 -->
+        <div class="character-zone">
+            <div class="glow"></div>
+            <!-- 这里先放一个表情或图片，之后可以换成 3D 模型 -->
+        </div>
+
+        <!-- 对话展示区 -->
+        <div class="chat-display" id="chatDisplay">
+            <div class="ai-text" id="aiText">你好，我是你的金毛伙伴。今天想聊点什么？</div>
+            <div class="subtitle" id="aiSubtitle">Hello, I'm your Golden Retriever companion.</div>
+        </div>
+
+        <!-- 输入区 -->
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="输入文字与它对话..." autocomplete="off">
+            <button id="sendBtn">发送</button>
+        </div>
+
+        <!-- 控制台 -->
+        <div id="settingsPanel" style="display:none; position:fixed; top:20px; right:20px; background:rgba(0,0,0,0.8); padding:20px; border-radius:15px; width:250px;">
+            <h4>性格设定</h4>
+            <textarea id="personaInput" style="width:100%; height:100px; background:#222; color:#fff; border:1px solid #444;">你是一个忠诚的守望者...</textarea>
+            <button onclick="saveSettings()">保存设定</button>
+        </div>
+<button id="toggleSettings" style="position:fixed; top:20px; right:20px; opacity:0.3;">⚙️</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
