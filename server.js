@@ -12,7 +12,12 @@ app.use(cors({
         // 允许没有origin的请求（如curl、Postman）
         if (!origin) return callback(null, true);
 
-        // 允许的域名列表
+        // 从环境变量获取允许的域名（可选）
+        const envAllowedOrigins = process.env.ALLOWED_ORIGINS
+            ? process.env.ALLOWED_ORIGINS.split(',')
+            : [];
+
+        // 允许的域名列表（硬编码 + 环境变量）
         const allowedOrigins = [
             // 本地开发环境
             "http://localhost:5500",    // Live Server默认端口
@@ -22,11 +27,19 @@ app.use(cors({
             "http://127.0.0.1:5500",    // IPv4地址
             "http://127.0.0.1:8080",
             "http://127.0.0.1:3000",
-            // 生产环境
-            "https://dchat-gamma.vercel.app"
+            // 生产环境 - Vercel前端
+            "https://dchat-gamma.vercel.app",
+            // 从环境变量添加的域名
+            ...envAllowedOrigins
         ];
 
-        if (allowedOrigins.includes(origin)) {
+        // 去重
+        const uniqueOrigins = [...new Set(allowedOrigins.filter(Boolean))];
+
+        console.log(`🌐 CORS检查: origin=${origin}, 允许的域名:`, uniqueOrigins);
+
+        if (uniqueOrigins.includes(origin)) {
+            console.log(`✅ CORS允许: ${origin}`);
             return callback(null, true);
         }
 
@@ -37,6 +50,7 @@ app.use(cors({
             return callback(null, true);
         }
 
+        console.log(`❌ CORS拒绝: ${origin}`);
         return callback(new Error('Not allowed by CORS'));
     }
 }));

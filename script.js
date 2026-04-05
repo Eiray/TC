@@ -7,21 +7,41 @@ console.log("window.location.hostname:", window.location.hostname);
 console.log("window.location.origin:", window.location.origin);
 console.log("window.location.protocol:", window.location.protocol);
 
+// ==========================================
+// 后端API配置（请根据您的部署环境修改）
+// ==========================================
+const API_CONFIG = {
+    // 本地开发环境 - 后端运行在本地
+    development: 'http://localhost:3000',
+
+    // 生产环境 - 后端部署在Render
+    // 您的Render后端网址: https://tc-tqaf.onrender.com
+    production: 'https://tc-tqaf.onrender.com'
+};
+
 // 修复：环境感知的API_BASE配置
-// 本地开发时使用localhost:3000，生产环境使用Vercel部署地址
+// 本地开发时使用localhost:3000，生产环境使用Render后端
 const isLocalhost = window.location.hostname === 'localhost' ||
                     window.location.hostname === '127.0.0.1' ||
                     window.location.hostname === '' ||
                     window.location.hostname === '::1';
 
 const API_BASE = isLocalhost
-    ? 'http://localhost:3000'  // 本地开发
-    : 'https://dchat-gamma.vercel.app'; // 生产环境（Vercel部署）
+    ? API_CONFIG.development  // 本地开发
+    : API_CONFIG.production;  // 生产环境
 
 console.log("✅ 环境检测结果:");
 console.log("isLocalhost:", isLocalhost);
-console.log("API_BASE:", API_BASE);
+console.log("API配置:", API_CONFIG);
+console.log("使用的API_BASE:", API_BASE);
 console.log("当前页面URL:", window.location.href);
+
+// 检查API配置是否正确
+if (!API_BASE || API_BASE.includes('YOUR-RENDER-APP')) {
+    console.error('❌ 请配置正确的Render后端网址！');
+    console.error('请在 script.js 中将 API_CONFIG.production 修改为您的Render后端网址');
+    alert('⚠️ 后端配置未完成！请检查控制台并按照说明配置Render后端网址。');
+}
 
 // 检查Three.js是否加载成功
 if (typeof THREE === 'undefined') {

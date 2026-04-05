@@ -98,19 +98,65 @@ curl -X POST http://localhost:3000/chat \
 
 ## 部署说明
 
+### 全栈部署架构
+```
+用户浏览器 → Vercel前端(静态文件) → Render后端(Node.js) → DeepSeek API
+```
+
 ### 前端部署 (Vercel)
 1. 将前端文件上传到Vercel
 2. 访问地址: `https://dchat-gamma.vercel.app`
-3. 确保 `script.js` 中的 `API_BASE` 指向生产环境
+3. **重要**: 配置 `script.js` 中的 `API_CONFIG.production` 指向Render后端
 
-### 后端部署
-1. 将后端代码部署到支持Node.js的服务(Render, Railway, Vercel Serverless等)
-2. 设置环境变量 `API_KEY`
-3. 更新前端的 `API_BASE` 为后端部署地址
+### 后端部署 (Render)
+#### 步骤1: 部署到Render
+1. 在 [render.com](https://render.com) 创建新Web Service
+2. 连接GitHub仓库
+3. 配置设置:
+   - **名称**: `dchat-backend` (或自定义)
+   - **环境**: Node
+   - **构建命令**: `npm install`
+   - **启动命令**: `npm start`
+   - **实例类型**: Free (或根据需要升级)
+
+#### 步骤2: 配置环境变量
+在Render Dashboard中添加环境变量:
+- `API_KEY`: 您的DeepSeek API密钥
+- `NODE_ENV`: `production` (可选)
+- `ALLOWED_ORIGINS`: `https://dchat-gamma.vercel.app` (可选，多个用逗号分隔)
+
+#### 步骤3: 获取Render后端网址
+部署完成后，Render会提供类似 `https://dchat-backend.onrender.com` 的URL
+
+### 前端配置修改
+部署Render后，**必须修改前端配置**:
+
+1. 打开 `script.js` 文件
+2. 找到 `API_CONFIG` 对象 (约第15行)
+3. 修改 `production` 值为您的Render后端网址:
+   ```javascript
+   const API_CONFIG = {
+       development: 'http://localhost:3000',
+       production: 'https://tc-tqaf.onrender.com'  // ← 用户的实际Render网址
+   };
+   ```
+
+4. 重新部署前端到Vercel
 
 ### 环境配置
-- **开发环境**: API自动指向 `http://localhost:3000`
-- **生产环境**: API自动指向 `https://dchat-gamma.vercel.app`
+- **开发环境**: API自动指向 `http://localhost:3000` (本地)
+- **生产环境**: API自动指向您的Render后端网址
+
+### 验证部署
+1. **测试后端**: 访问 `https://tc-tqaf.onrender.com/health` 应返回JSON
+2. **测试API**: 
+   ```bash
+   curl -X POST https://tc-tqaf.onrender.com/chat \
+     -H "Content-Type: application/json" \
+     -H "Origin: https://dchat-gamma.vercel.app" \
+     -d '{"messages":[{"role":"user","content":"测试"}]}'
+   ```
+3. **测试前端**: 访问Vercel前端，发送消息测试
 
 ## 技术栈
 - **前端**: HTML5, CSS3, JavaScript, Three.js
