@@ -1,197 +1,85 @@
-// ==========================================
-// 0. 环境检查和配置
-// ==========================================
-
-console.log("🔍 环境检测开始...");
-console.log("window.location.hostname:", window.location.hostname);
-console.log("window.location.origin:", window.location.origin);
-console.log("window.location.protocol:", window.location.protocol);
-
-// ==========================================
-// 后端API配置（请根据您的部署环境修改）
-// ==========================================
+/**
+ * ==========================================
+ * 1. 环境与 API 配置 (请勿修改跨域逻辑)
+ * ==========================================
+ */
 const API_CONFIG = {
-    // 本地开发环境 - 后端运行在本地
     development: 'http://localhost:3000',
-
-    // 生产环境 - 后端部署在Render
-    // 您的Render后端网址: https://tc-tqaf.onrender.com
     production: 'https://tc-tqaf.onrender.com'
 };
 
-// 修复：环境感知的API_BASE配置
-// 本地开发时使用localhost:3000，生产环境使用Render后端
-const isLocalhost = window.location.hostname === 'localhost' ||
-                    window.location.hostname === '127.0.0.1' ||
-                    window.location.hostname === '' ||
-                    window.location.hostname === '::1';
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = isLocalhost ? API_CONFIG.development : API_CONFIG.production;
 
-const API_BASE = isLocalhost
-    ? API_CONFIG.development  // 本地开发
-    : API_CONFIG.production;  // 生产环境
+console.log("🚀 环境初始化:", { API_BASE, isLocalhost });
 
-console.log("✅ 环境检测结果:");
-console.log("isLocalhost:", isLocalhost);
-console.log("API配置:", API_CONFIG);
-console.log("使用的API_BASE:", API_BASE);
-console.log("当前页面URL:", window.location.href);
-
-// 检查API配置是否正确
-if (!API_BASE || API_BASE.includes('YOUR-RENDER-APP')) {
-    console.error('❌ 请配置正确的Render后端网址！');
-    console.error('请在 script.js 中将 API_CONFIG.production 修改为您的Render后端网址');
-    alert('⚠️ 后端配置未完成！请检查控制台并按照说明配置Render后端网址。');
-}
-
-// 检查Three.js是否加载成功
-if (typeof THREE === 'undefined') {
-    console.error('❌ Three.js未加载！请检查网络或CDN连接');
-    alert('Three.js加载失败，请检查网络连接或刷新页面');
-}
-
-// 检查WebGL支持
-const canvas = document.getElementById('particleCanvas');
-if (canvas) {
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (!gl) {
-        console.error('❌ WebGL不支持！浏览器可能不支持WebGL或硬件加速被禁用');
-        alert('您的浏览器不支持WebGL，请使用Chrome/Firefox等现代浏览器，并确保硬件加速已启用');
-    }
-}
-let chatHistory = JSON.parse(localStorage.getItem("chat_history") || "[]");
-// 角色设定：告诉 AI 它是一只金毛/柴犬
-const SYSTEM_PROMPT = "你是一只可爱、忠诚、活泼的电子柴犬，名字叫金豆。喜欢和主人互动，非常粘主人，回答要简洁、幽默、温柔、风趣、充满关怀。";
-// ==========================================
-// 1. 基础环境设置
-// ==========================================
+/**
+ * ==========================================
+ * 2. 3D 场景初始化 (Three.js)
+ * ==========================================
+ */
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ 
-    canvas: document.getElementById('particleCanvas'), 
-    alpha: true, 
-    antialias: true 
+const renderer = new THREE.WebGLRenderer({
+    canvas: document.getElementById('particleCanvas'),
+    alpha: true,
+    antialias: true
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
-camera.position.set(0, 0, 5); 
+camera.position.set(0, 0, 5);
 
-// ==========================================
-// 2. 背景粒子系统
-// ==========================================
+// 粒子背景
 const bgGeometry = new THREE.BufferGeometry();
 const bgCount = 3000;
 const bgPos = new Float32Array(bgCount * 3);
 for(let i=0; i<bgCount*3; i++) bgPos[i] = (Math.random() - 0.5) * 20;
 bgGeometry.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
-const bgMaterial = new THREE.PointsMaterial({ size: 0.015, color: 0xffffff, transparent: true, opacity: 0.4 });
-const bgSystem = new THREE.Points(bgGeometry, bgMaterial);
+const bgSystem = new THREE.Points(bgGeometry, new THREE.PointsMaterial({ size: 0.015, color: 0xffffff, transparent: true, opacity: 0.3 }));
 scene.add(bgSystem);
 
-// ==========================================
-// 3. 灯光设置 (增强亮度)
-// ==========================================
+// 灯光
 const light = new THREE.DirectionalLight(0xffffff, 1.2);
 light.position.set(1, 1, 5);
 scene.add(light);
-scene.add(new THREE.AmbientLight(0xffffff, 0.8)); 
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
-// ==========================================
-// 4. 加载 3D 模型
-// ==========================================
-let dogModel;
+// 加载模型
+let dogModel, distortion = 0;
 const loader = new THREE.GLTFLoader();
-const modelUrl = 'shiba_dog.glb'; 
+loader.load('shiba_dog.glb', (gltf) => {
+    dogModel = gltf.scene;
+    dogModel.scale.set(0.5, 0.5, 0.5);
+    scene.add(dogModel);
+    console.log("✅ 模型就绪");
+});
 
-// 参数调节区
-let baseScale = 0.5;      // 模型基础大小 (如果还是大，请调成 0.2)
-let baseY = 1;         // 模型在画面中的上下位置 (负数越小越靠下)
-let distortion = 0;       // 点击产生的扭曲能量
-
-loader.load(modelUrl,
-    function (gltf) {
-        dogModel = gltf.scene;
-        // 初始缩放
-        dogModel.scale.set(baseScale, baseScale, baseScale);
-        scene.add(dogModel);
-        console.log("✅ 3D模型加载成功！");
-    },
-    // 加载进度回调
-    function (xhr) {
-        console.log(`模型加载进度: ${(xhr.loaded / xhr.total * 100).toFixed(2)}%`);
-    },
-    // 错误回调
-    function (error) {
-        console.error("❌ 3D模型加载失败：", error);
-        console.error("可能的原因：");
-        console.error("1. 文件路径错误：", modelUrl);
-        console.error("2. 文件不存在或权限问题");
-        console.error("3. Three.js GLTFLoader版本不兼容");
-        console.error("4. 网络请求被阻止");
-
-        // 显示用户友好的错误提示
-        const aiText = document.getElementById('aiText');
-        if (aiText) {
-            aiText.innerText = "3D模型加载失败，但聊天功能仍然可用。请检查控制台查看详细错误。";
-        }
-    }
-);
-
-// ==========================================
-// 5. 动画循环 (核心逻辑)
-// ==========================================
 function animate() {
     requestAnimationFrame(animate);
-    
     const time = Date.now() * 0.002;
-
-    // 背景旋转
-    if (bgSystem) bgSystem.rotation.y += 0.0003;
-    
+    if (bgSystem) bgSystem.rotation.y += 0.0002;
     if (dogModel) {
-        // --- 灵动感 1：自动平滑自转 ---
-        dogModel.rotation.y += 0.005; 
-
-        // --- 灵动感 2：呼吸 + 点击扭曲 (Scale) ---
-        // 呼吸会让大小在 baseScale 基础上微调
-        let breath = Math.sin(time) * 0.015; 
-        // 最终缩放 = 基础 + 呼吸 + 点击波动
-        let s = baseScale + breath + distortion;
+        dogModel.rotation.y += 0.005;
+        let s = 0.5 + Math.sin(time) * 0.01 + distortion;
         dogModel.scale.set(s, s, s);
-
-        // --- 灵动感 3：上下漂浮 (Position) ---
-        // 使用 baseY 作为基准，加上正弦波实现悬浮感
-        dogModel.position.y = baseY + Math.sin(time * 0.5) * 0.1;
-
-        // --- 灵动感 4：点击时的 Z 轴摇摆 (Wobble) ---
-        // 点击时产生左右晃动
+        dogModel.position.y = 1 + Math.sin(time * 0.5) * 0.1;
         dogModel.rotation.z = Math.sin(time * 15) * distortion * 2;
-
-        // --- 能量衰减 ---
-        // 每一帧扭曲能量减少 10%，形成“Duang”的一下弹回来的效果
-        distortion *= 0.92; 
+        distortion *= 0.92;
     }
-    
     renderer.render(scene, camera);
 }
 animate();
 
-// ==========================================
-// 6. 交互事件
-// ==========================================
-
-// 点击互动
-window.addEventListener('click', () => {
-    // 1. 注入扭曲能量
-    distortion = 0.1; 
-    
-    // 2. 触发 AI 逻辑 (如果有输入文字则处理对话)
-    const text = userInput.value.trim();
-    if (text) {
-        handleChat();
-    } else {
-        // 如果没输入文字，只点击小狗，可以让它简单的“汪”一下
-        aiText.innerText = "汪！你在摸我吗？";
-        speak("汪！你在摸我吗？");
-    }
+/**
+ * ==========================================
+ * 3. 核心交互逻辑 (精确 3D 点击)
+ * ==========================================
+ */
+// 只在点击 3D 画布时触发模型动画
+renderer.domElement.addEventListener('click', (event) => {
+    event.stopPropagation();
+    // 触发模型动效 (只触发动画，不触发语音)
+    distortion = 0.15;
+    console.log("🐶 模型被点击，触发动画效果");
 });
 
 // 窗口自适应
@@ -201,132 +89,161 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// 对话系统
-const sendBtn = document.getElementById('sendBtn');
-const userInput = document.getElementById('userInput');
-const aiText = document.getElementById('aiText');
+/**
+ * ==========================================
+ * 4. 语音与 AI 对话系统
+ * ==========================================
+ */
+let chatHistory = JSON.parse(localStorage.getItem("chat_history") || "[]");
+let savedMemories = JSON.parse(localStorage.getItem("saved_memories") || "[]");
+let userDefinedPersona = localStorage.getItem('shiba_persona') || "你是一个忠诚、温柔且风趣的伙伴。请遵守以下对话准则：1) 回复中不要使用表情符号，括号内的描述内容也不要写入回复文本；2) 使用自然的人类聊天模式，避免长句，保持对话简洁亲切。";
 
+function cleanTextForSpeech(text) {
+    // 移除表情符号和颜文字
+    let cleaned = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+
+    // 移除括号及其中的内容（包括中文括号和英文括号）
+    cleaned = cleaned.replace(/[（\(].*?[）\)]/g, '');
+
+    // 移除其他常见特殊符号
+    cleaned = cleaned.replace(/[✨🌟🔥💫⭐️🎉💖💕💞💓💗💘❤️🧡💛💚💙💜🖤🤍🤎]/gu, '');
+
+    // 移除多余的空格和标点
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+    return cleaned;
+}
 
 function speak(text) {
     window.speechSynthesis.cancel();
-    const msg = new SpeechSynthesisUtterance(text);
-    
-    // 获取当前系统的所有可用声音
+
+    // 清理文本，移除表情符号和括号内容
+    const cleanedText = cleanTextForSpeech(text);
+
+    const msg = new SpeechSynthesisUtterance(cleanedText);
     const voices = window.speechSynthesis.getVoices();
-    // 尝试寻找一个中文女声或男声（不同电脑名字不同）
-    msg.voice = voices.find(v => v.name.includes("Xiaoxiao") || v.lang === "zh-CN");
-    
-    msg.pitch = 1.2; // 这里的数值可以微调，0.8 偏成熟，1.2 偏少年
-    msg.rate = 0.95; // 语速稍慢更显温柔
-    msg.volume = 1.0;
-    
+    msg.voice = voices.find(v => v.lang === "zh-CN") || voices[0];
+    msg.pitch = 1.2;
+    msg.rate = 1.0;
     window.speechSynthesis.speak(msg);
 }
 
-// 绑定发送按钮
-sendBtn.onclick = (e) => {
-    e.stopPropagation(); // 防止触发点击页面的 distortion 叠加
-    handleChat();
-};
-userInput.onkeypress = (e) => { if(e.key === "Enter") handleChat(); };
-
-// 记忆数组：保留最近 10 轮对话
-
-// 用户自定义性格（初始值）
-let userDefinedPersona = "你是一个温和、理性、富有同情心的陪伴者。你有着柴犬的外表，但灵魂是一个成熟的人类。你忠诚、幽默，能洞察用户的情绪，提供情绪价值。不要频繁说汪，要像人一样交流。";
-
 async function handleChat() {
+    const userInput = document.getElementById('userInput');
+    const aiText = document.getElementById('aiText');
     const text = userInput.value.trim();
     if (!text) return;
 
     userInput.value = "";
     aiText.innerText = "思考中...";
+    document.getElementById('saveMemoryBtn').style.display = 'none';
 
-    const systemMessage = {
-        role: "system",
-        content: userDefinedPersona
-    };
-
-    const userMessage = {
-        role: "user",
-        content: text
-    };
-
-    // ✅ 正确维护历史
-    chatHistory.push(userMessage);
-    chatHistory = chatHistory.slice(-20);
+    chatHistory.push({ role: "user", content: text });
+    if (chatHistory.length > 18) chatHistory = chatHistory.slice(-18); // 保持足够的上下文
 
     try {
         const response = await fetch(`${API_BASE}/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                messages: [systemMessage, ...chatHistory]
+                messages: [{ role: "system", content: userDefinedPersona + " 此外，请严格遵守以下硬性准则：1) 回复中绝对不要使用表情符号或颜文字，括号内的描述性内容（如动作、表情描述）也不要写入回复文本；2) 使用自然的人类日常聊天模式，避免长句和复杂句式，保持对话简洁、亲切、口语化。" }, ...chatHistory]
             })
         });
 
-        // ❗关键防崩 - 修复：增强错误处理，处理服务器未响应或返回非JSON格式的情况
-        if (!response.ok) {
-            try {
-                const err = await response.json();
-                throw new Error(err.error || `服务器错误: ${response.status}`);
-            } catch (e) {
-                // 如果无法解析为JSON，返回原始状态信息
-                throw new Error(`网络错误: ${response.status} ${response.statusText || '服务器未响应'}`);
-            }
-        }
-
+        if (!response.ok) throw new Error("网络连接异常");
         const data = await response.json();
-
-        if (!data?.choices?.[0]?.message?.content) {
-            throw new Error("返回格式异常");
-        }
-
         const aiReply = data.choices[0].message.content;
 
-        // ✅ 更新UI
         aiText.innerText = aiReply;
         speak(aiReply);
+        document.getElementById('saveMemoryBtn').style.display = 'block';
 
-        // ✅ 存入历史
-        chatHistory.push({
-            role: "assistant",
-            content: aiReply
-        });
+        chatHistory.push({ role: "assistant", content: aiReply });
+        localStorage.setItem("chat_history", JSON.stringify(chatHistory));
 
     } catch (err) {
         console.error("❌ 前端错误:", err.message);
 
-        // 修复：提供更友好的错误提示
+        // 详细的错误分类
         let errorMessage = err.message;
         if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
             errorMessage = '网络连接失败，请检查服务器是否运行或网络连接';
         } else if (err.message.includes('CORS')) {
             errorMessage = '跨域访问被拒绝，请检查CORS配置';
+        } else if (err.message.includes('服务器错误')) {
+            errorMessage = `服务器错误: ${response?.status || '未知状态'}`;
         }
 
         aiText.innerText = `出错了：${errorMessage}`;
+        console.error("详细错误信息:", { err, response, API_BASE });
     }
-    localStorage.setItem("chat_history", JSON.stringify(chatHistory));
 }
 
+// 绑定发送
+document.getElementById('sendBtn').onclick = handleChat;
+document.getElementById('userInput').onkeypress = (e) => e.key === "Enter" && handleChat();
+
+/**
+ * ==========================================
+ * 5. 设置面板与记忆管理
+ * ==========================================
+ */
+const panel = document.getElementById('settingsPanel');
+const overlay = document.getElementById('uiOverlay');
+
+document.getElementById('toggleSettings').onclick = (e) => {
+    e.stopPropagation();
+    const isActive = panel.classList.toggle('active');
+    overlay.style.display = isActive ? 'block' : 'none';
+    if (isActive) renderMemoryList();
+};
+
+overlay.onclick = () => {
+    panel.classList.remove('active');
+    overlay.style.display = 'none';
+};
 
 function saveSettings() {
     userDefinedPersona = document.getElementById('personaInput').value;
-    localStorage.setItem('shiba_persona', userDefinedPersona); // 保存到浏览器缓存
+    localStorage.setItem('shiba_persona', userDefinedPersona);
     alert("性格已重塑，汪！");
 }
 
-// 页面加载时恢复之前的性格
-window.onload = () => {
-    const saved = localStorage.getItem('shiba_persona');
-    if (saved) {
-        userDefinedPersona = saved;
-        document.getElementById('personaInput').value = saved;
-    }
-};
+function addCurrentToMemory() {
+    const text = document.getElementById('aiText').innerText;
+    if (text.includes("...") || text.includes("抱歉")) return;
 
-document.getElementById('toggleSettings').onclick = () => {
-    const panel = document.getElementById('settingsPanel');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-};
+    savedMemories.unshift({ id: Date.now(), text, time: new Date().toLocaleTimeString() });
+    localStorage.setItem("saved_memories", JSON.stringify(savedMemories));
+    document.getElementById('saveMemoryBtn').style.display = 'none';
+    alert("记忆已存入记忆库");
+}
+
+function renderMemoryList() {
+    const list = document.getElementById('memoryList');
+    list.innerHTML = savedMemories.length ? '' : '<p style="font-size:12px; opacity:0.3; text-align:center;">尚无记忆碎片</p>';
+
+    savedMemories.slice(0, 15).forEach(mem => {
+        const item = document.createElement('div');
+        item.className = 'memory-item';
+        item.innerHTML = `
+            <div style="flex:1; overflow:hidden">
+                <div style="white-space:nowrap; text-overflow:ellipsis; overflow:hidden">${mem.text}</div>
+                <div style="font-size:10px; opacity:0.3">${mem.time}</div>
+            </div>
+            <span style="font-size:12px">▶️</span>
+        `;
+        item.onclick = (e) => {
+            e.stopPropagation();
+            document.getElementById('aiText').innerText = mem.text;
+            speak(mem.text);
+        };
+        list.appendChild(item);
+    });
+}
+
+// 初始化
+window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('personaInput').value = userDefinedPersona;
+    renderMemoryList(); // 初始化记忆列表显示
+});

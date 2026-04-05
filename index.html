@@ -2,46 +2,60 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>BY-U-SIDE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BY-U-SIDE |  AI Companion</title>
     <link rel="stylesheet" href="style.css">
-    <!-- 引入 Three.js 用于生成粒子 -->
+    <!-- 核心依赖 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- 在 three.min.js 之后添加 -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
-    <!-- 粒子背景渲染层 -->
+    <!-- 背景层 -->
     <canvas id="particleCanvas"></canvas>
+    <div id="uiOverlay"></div>
 
     <div class="container">
-        <!-- 头部 -->
-        <div class="header">STAY WITH YOU · BE  WITH  ME</div>
+        <!-- 顶部标识 -->
+        <div class="header">STAY WITH YOU · BE WITH ME</div>
 
-        <!-- 角色显示区 -->
+        <!-- 3D 角色区 -->
         <div class="character-zone">
             <div class="glow"></div>
-            <!-- 这里先放一个表情或图片，之后可以换成 3D 模型 -->
         </div>
 
         <!-- 对话展示区 -->
         <div class="chat-display" id="chatDisplay">
-            <div class="ai-text" id="aiText">你好，我是你的金毛伙伴。今天想聊点什么？</div>
-            <div class="subtitle" id="aiSubtitle">Hello, I'm your Golden Retriever companion.</div>
+            <div class="ai-text" id="aiText">你好，我是你的伙伴金豆。今天想聊点什么？</div>
+            <div class="subtitle" id="aiSubtitle">Hello, I'm your companion. What's on your mind?</div>
+            <!-- 即时保存按钮 -->
+            <div id="saveMemoryBtn" onclick="addCurrentToMemory()">
+                💾 保存这段记忆 (Save Memory)
+            </div>
         </div>
 
-        <!-- 输入区 -->
+        <!-- 输入交互区 -->
         <div class="input-area">
             <input type="text" id="userInput" placeholder="输入文字与它对话..." autocomplete="off">
             <button id="sendBtn">发送</button>
         </div>
 
-        <!-- 控制台 -->
-        <div id="settingsPanel" style="display:none; position:fixed; top:20px; right:20px; background:rgba(0,0,0,0.8); padding:20px; border-radius:15px; width:250px;">
-            <h4>性格设定</h4>
-            <textarea id="personaInput" style="width:100%; height:100px; background:#222; color:#fff; border:1px solid #444;">你是一个忠诚的守望者...</textarea>
-            <button onclick="saveSettings()">保存设定</button>
+        <!-- 设置面板（毛玻璃） -->
+        <div id="settingsPanel">
+            <div class="panel-header">
+                <h4>性格重塑</h4>
+                <p style="font-size: 10px; opacity: 0.5;">PERSONA SETTINGS</p>
+            </div>
+            <textarea id="personaInput">你是一个忠诚、温柔且风趣的伙伴。请遵守以下对话准则：1) 回复中不要使用表情符号，括号内的描述内容也不要写入回复文本；2) 使用自然的人类聊天模式，避免长句，保持对话简洁亲切。</textarea>
+            <button class="primary-btn" onclick="saveSettings()">保存设定</button>
+
+            <h4 style="margin-top:25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:15px;">记忆库 (点击重放)</h4>
+            <div id="memoryList" class="memory-list">
+                <!-- 动态渲染 -->
+            </div>
         </div>
-<button id="toggleSettings" style="position:fixed; top:20px; right:20px; opacity:0.3;">⚙️</button>
+
+        <!-- 功能切换按钮 -->
+        <button id="toggleSettings">⚙️</button>
     </div>
 
     <script src="script.js"></script>
