@@ -24,10 +24,12 @@ let requestCount = 0;
 setInterval(() => requestCount = 0, 60000); // 每分钟重置
 
 app.post('/chat', async (req, res) => {
-    const allowedOrigin = ["https://dchat-gamma.vercel.app"];  // 在这里填入你的前端域名，比如 Vercel 的域名
+    // 修复：统一CORS配置，允许本地开发和Vercel部署
+    const allowedOrigin = ["http://localhost:5500", "https://dchat-gamma.vercel.app"];
 
-    if (!allowedOrigin.includes(req.headers.origin)) {
-        return res.status(403).json({ error: "非法来源" });  // 如果请求来源不在允许的域名中，返回 403 错误
+    // 检查请求来源，确保安全
+    if (req.headers.origin && !allowedOrigin.includes(req.headers.origin)) {
+        return res.status(403).json({ error: "非法来源" });
     }
 
     // 限流逻辑（基于 IP）

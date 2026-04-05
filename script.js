@@ -1,4 +1,12 @@
-const API_BASE = "https://tc-tqaf.onrender.com";
+// 修复：环境感知的API_BASE配置
+// 本地开发时使用localhost:3000，生产环境使用Vercel部署地址
+const isLocalhost = window.location.hostname === 'localhost' ||
+                    window.location.hostname === '127.0.0.1' ||
+                    window.location.hostname === '';
+
+const API_BASE = isLocalhost
+    ? 'http://localhost:3000'  // 本地开发
+    : 'https://dchat-gamma.vercel.app'; // 生产环境（Vercel部署）
 let chatHistory = JSON.parse(localStorage.getItem("chat_history") || "[]");
 // 角色设定：告诉 AI 它是一只金毛/柴犬
 const SYSTEM_PROMPT = "你是一只可爱、忠诚、活泼的电子柴犬，名字叫金豆。喜欢和主人互动，非常粘主人，回答要简洁、幽默、温柔、风趣、充满关怀。";
@@ -187,10 +195,15 @@ async function handleChat() {
             })
         });
 
-        // ❗关键防崩
+        // ❗关键防崩 - 修复：增强错误处理，处理服务器未响应或返回非JSON格式的情况
         if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error || "服务器错误");
+            try {
+                const err = await response.json();
+                throw new Error(err.error || `服务器错误: ${response.status}`);
+            } catch (e) {
+                // 如果无法解析为JSON，返回原始状态信息
+                throw new Error(`网络错误: ${response.status} ${response.statusText || '服务器未响应'}`);
+            }
         }
 
         const data = await response.json();
@@ -214,7 +227,15 @@ async function handleChat() {
     } catch (err) {
         console.error("❌ 前端错误:", err.message);
 
-        aiText.innerText = `出错了：${err.message}`;
+        // 修复：提供更友好的错误提示
+        let errorMessage = err.message;
+        if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+            errorMessage = '网络连接失败，请检查服务器是否运行或网络连接';
+        } else if (err.message.includes('CORS')) {
+            errorMessage = '跨域访问被拒绝，请检查CORS配置';
+        }
+
+        aiText.innerText = `出错了：${errorMessage}`;
     }
     localStorage.setItem("chat_history", JSON.stringify(chatHistory));
 }
