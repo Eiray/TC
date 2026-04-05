@@ -6,11 +6,39 @@ const cors = require('cors');
 
 const app = express();
 
-// ✅ 安全 CORS（上线记得换域名）
+// ✅ 安全 CORS配置（开发+生产）
 app.use(cors({
-    origin: ["http://localhost:5500",
-    "https://dchat-gamma.vercel.app"
-    ]
+    origin: function (origin, callback) {
+        // 允许没有origin的请求（如curl、Postman）
+        if (!origin) return callback(null, true);
+
+        // 允许的域名列表
+        const allowedOrigins = [
+            // 本地开发环境
+            "http://localhost:5500",    // Live Server默认端口
+            "http://localhost:8080",    // 常见开发端口
+            "http://localhost:3000",    // React/Vue开发服务器
+            "http://localhost:3001",    // 备用端口
+            "http://127.0.0.1:5500",    // IPv4地址
+            "http://127.0.0.1:8080",
+            "http://127.0.0.1:3000",
+            // 生产环境
+            "https://dchat-gamma.vercel.app"
+        ];
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        // 对于开发环境，允许所有本地请求（仅开发时使用）
+        if (process.env.NODE_ENV !== 'production' &&
+            (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+            console.log(`⚠️ 开发环境允许本地请求: ${origin}`);
+            return callback(null, true);
+        }
+
+        return callback(new Error('Not allowed by CORS'));
+    }
 }));
 
 app.use(express.json());
@@ -24,13 +52,8 @@ let requestCount = 0;
 setInterval(() => requestCount = 0, 60000); // 每分钟重置
 
 app.post('/chat', async (req, res) => {
-    // 修复：统一CORS配置，允许本地开发和Vercel部署
-    const allowedOrigin = ["http://localhost:5500", "https://dchat-gamma.vercel.app"];
-
-    // 检查请求来源，确保安全
-    if (req.headers.origin && !allowedOrigin.includes(req.headers.origin)) {
-        return res.status(403).json({ error: "非法来源" });
-    }
+    // 注意：CORS中间件已在第9-14行配置，此处无需重复检查
+    // 保留限流和API逻辑，移除重复的来源检查
 
     // 限流逻辑（基于 IP）
     const ip = req.ip;
@@ -114,8 +137,61 @@ app.post('/chat', async (req, res) => {
     }
 });
 
+// 健康检查端点
+app.get('/health', (_req, res) => {
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        port: PORT,
+        corsAllowedOrigins: ["http://localhost:5500", "https://dchat-gamma.vercel.app"]
+    });
+});
+
+// 根路径重定向或信息
+app.get('/', (_req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>3D柴犬AI聊天服务器</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+                .container { max-width: 800px; margin: 0 auto; }
+                .status { background: #e8f5e8; padding: 20px; border-radius: 5px; margin: 20px 0; }
+                .error { background: #ffe8e8; padding: 20px; border-radius: 5px; }
+                code { background: #f5f5f5; padding: 2px 5px; border-radius: 3px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🚀 3D柴犬AI聊天服务器</h1>
+                <div class="status">
+                    <h2>✅ 服务器运行正常</h2>
+                    <p>端口: <code>${PORT}</code></p>
+                    <p>API端点: <code>POST /chat</code></p>
+                    <p>健康检查: <code>GET /health</code></p>
+                </div>
+                <h2>使用说明</h2>
+                <ul>
+                    <li>前端请打开 <code>index.html</code> 文件</li>
+                    <li>确保使用 Live Server (端口5500) 或兼容的静态服务器</li>
+                    <li>聊天API需要有效的DeepSeek API密钥</li>
+                </ul>
+                <h2>快速测试</h2>
+                <pre><code>curl -X POST http://localhost:${PORT}/chat \\
+  -H "Content-Type: application/json" \\
+  -H "Origin: http://localhost:5500" \\
+  -d '{"messages":[{"role":"user","content":"Hello"}]}'</code></pre>
+            </div>
+        </body>
+        </html>
+    `);
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
     console.log("🚀 Server running on port", PORT);
+    console.log("📊 健康检查: http://localhost:" + PORT + "/health");
+    console.log("🏠 首页: http://localhost:" + PORT);
 });

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>系统诊断工具 - 3D柴犬AI聊天</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .success { background: #e8f5e8; border-left: 4px solid #2ecc71; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; }
+        .error { background: #f8d7da; border-left: 4px solid #dc3545; }
+        .info { background: #d1ecf1; border-left: 4px solid #17a2b8; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 8px 16px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .hidden { display: none; }
+        #results { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 3D柴犬AI聊天系统诊断工具</h1>
+
+        <div class="section info">
+            <h2>诊断说明</h2>
+            <p>此工具帮助诊断网站无法正常回复的问题。点击下面的按钮运行诊断测试。</p>
+        </div>
+
+        <div class="section">
+            <h2>第一步：环境检测</h2>
+            <button onclick="testEnvironment()">检测环境配置</button>
+            <div id="envResults"></div>
+        </div>
+
+        <div class="section">
+            <h2>第二步：服务器连接测试</h2>
+            <p>确保服务器正在运行 (<code>node server.js</code> 或 <code>npm start</code>)</p>
+            <button onclick="testServerConnection()">测试服务器连接</button>
+            <div id="serverResults"></div>
+        </div>
+
+        <div class="section">
+            <h2>第三步：API端点测试</h2>
+            <button onclick="testApiEndpoint()">测试API端点</button>
+            <div id="apiResults"></div>
+        </div>
+
+        <div class="section">
+            <h2>第四步：CORS测试</h2>
+            <button onclick="testCors()">测试跨域访问</button>
+            <div id="corsResults"></div>
+        </div>
+
+        <div class="section">
+            <h2>手动检查步骤</h2>
+            <ol>
+                <li>打开浏览器开发者工具 (F12)</li>
+                <li>查看Console标签页的错误信息</li>
+                <li>查看Network标签页的请求状态</li>
+                <li>确保服务器进程没有停止</li>
+                <li>清除浏览器缓存 (Ctrl+Shift+R)</li>
+            </ol>
+        </div>
+
+        <div id="results" class="hidden"></div>
+    </div>
+
+    <script>
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="section ${type}">${message}</div>`;
+        }
+
+        function testEnvironment() {
+            const results = `
+                <h3>环境信息</h3>
+                <pre>
+主机名: ${window.location.hostname}
+协议: ${window.location.protocol}
+端口: ${window.location.port}
+完整URL: ${window.location.href}
+用户代理: ${navigator.userAgent}
+                </pre>
+                <h3>API配置检测</h3>
+                <pre>
+isLocalhost: ${window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '' || window.location.hostname === '::1'}
+推荐API地址: ${(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '' || window.location.hostname === '::1') ? 'http://localhost:3000' : 'https://dchat-gamma.vercel.app'}
+                </pre>
+            `;
+            showResult('envResults', results, 'info');
+        }
+
+        async function testServerConnection() {
+            try {
+                const response = await fetch('http://localhost:3000/health', {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('serverResults', `
+                        <h3>✅ 服务器连接成功</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <p>服务器运行在端口: ${data.port}</p>
+                        <p>CORS允许的来源: ${data.corsAllowedOrigins.join(', ')}</p>
+                    `, 'success');
+                } else {
+                    showResult('serverResults', `
+                        <h3>❌ 服务器响应错误</h3>
+                        <p>状态码: ${response.status}</p>
+                        <p>状态文本: ${response.statusText}</p>
+                    `, 'error');
+                }
+            } catch (error) {
+                showResult('serverResults', `
+                    <h3>❌ 服务器连接失败</h3>
+                    <p>错误信息: ${error.message}</p>
+                    <p>可能的原因:</p>
+                    <ul>
+                        <li>服务器未启动 (运行 <code>node server.js</code>)</li>
+                        <li>端口3000被占用</li>
+                        <li>防火墙阻止连接</li>
+                    </ul>
+                `, 'error');
+            }
+        }
+
+        async function testApiEndpoint() {
+            try {
+                const response = await fetch('http://localhost:3000/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: '测试消息，请回复"诊断测试通过"' }]
+                    }),
+                    mode: 'cors'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const reply = data.choices?.[0]?.message?.content || '无回复内容';
+                    showResult('apiResults', `
+                        <h3>✅ API端点测试成功</h3>
+                        <p>状态码: ${response.status}</p>
+                        <p>AI回复: "${reply.substring(0, 100)}${reply.length > 100 ? '...' : ''}"</p>
+                        <details>
+                            <summary>查看完整响应</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `, 'success');
+                } else {
+                    const errorText = await response.text();
+                    showResult('apiResults', `
+                        <h3>❌ API端点测试失败</h3>
+                        <p>状态码: ${response.status}</p>
+                        <p>错误信息: ${errorText}</p>
+                    `, 'error');
+                }
+            } catch (error) {
+                showResult('apiResults', `
+                    <h3>❌ API端点测试异常</h3>
+                    <p>错误信息: ${error.message}</p>
+                    <p>可能的原因:</p>
+                    <ul>
+                        <li>CORS配置问题</li>
+                        <li>网络连接问题</li>
+                        <li>服务器内部错误</li>
+                    </ul>
+                `, 'error');
+            }
+        }
+
+        async function testCors() {
+            const testOrigins = [
+                'http://localhost:5500',
+                'http://localhost:8080',
+                'http://localhost:3000',
+                'http://127.0.0.1:5500',
+                window.location.origin
+            ];
+
+            let results = '<h3>CORS测试结果</h3>';
+
+            for (const origin of testOrigins) {
+                try {
+                    const response = await fetch('http://localhost:3000/health', {
+                        method: 'GET',
+                        headers: { 'Origin': origin }
+                    });
+
+                    const corsHeader = response.headers.get('Access-Control-Allow-Origin');
+                    results += `
+                        <div class="${response.ok ? 'success' : 'error'}" style="margin: 5px 0; padding: 5px;">
+                            <strong>${origin}</strong>: ${response.ok ? '✅ 允许' : '❌ 拒绝'}
+                            ${corsHeader ? `<br>CORS头: ${corsHeader}` : ''}
+                        </div>
+                    `;
+                } catch (error) {
+                    results += `
+                        <div class="error" style="margin: 5px 0; padding: 5px;">
+                            <strong>${origin}</strong>: ❌ 错误 (${error.message})
+                        </div>
+                    `;
+                }
+            }
+
+            showResult('corsResults', results, 'info');
+        }
+    </script>
+</body>
+</html>

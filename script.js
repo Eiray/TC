@@ -1,12 +1,43 @@
+// ==========================================
+// 0. 环境检查和配置
+// ==========================================
+
+console.log("🔍 环境检测开始...");
+console.log("window.location.hostname:", window.location.hostname);
+console.log("window.location.origin:", window.location.origin);
+console.log("window.location.protocol:", window.location.protocol);
+
 // 修复：环境感知的API_BASE配置
 // 本地开发时使用localhost:3000，生产环境使用Vercel部署地址
 const isLocalhost = window.location.hostname === 'localhost' ||
                     window.location.hostname === '127.0.0.1' ||
-                    window.location.hostname === '';
+                    window.location.hostname === '' ||
+                    window.location.hostname === '::1';
 
 const API_BASE = isLocalhost
     ? 'http://localhost:3000'  // 本地开发
     : 'https://dchat-gamma.vercel.app'; // 生产环境（Vercel部署）
+
+console.log("✅ 环境检测结果:");
+console.log("isLocalhost:", isLocalhost);
+console.log("API_BASE:", API_BASE);
+console.log("当前页面URL:", window.location.href);
+
+// 检查Three.js是否加载成功
+if (typeof THREE === 'undefined') {
+    console.error('❌ Three.js未加载！请检查网络或CDN连接');
+    alert('Three.js加载失败，请检查网络连接或刷新页面');
+}
+
+// 检查WebGL支持
+const canvas = document.getElementById('particleCanvas');
+if (canvas) {
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) {
+        console.error('❌ WebGL不支持！浏览器可能不支持WebGL或硬件加速被禁用');
+        alert('您的浏览器不支持WebGL，请使用Chrome/Firefox等现代浏览器，并确保硬件加速已启用');
+    }
+}
 let chatHistory = JSON.parse(localStorage.getItem("chat_history") || "[]");
 // 角色设定：告诉 AI 它是一只金毛/柴犬
 const SYSTEM_PROMPT = "你是一只可爱、忠诚、活泼的电子柴犬，名字叫金豆。喜欢和主人互动，非常粘主人，回答要简洁、幽默、温柔、风趣、充满关怀。";
@@ -55,15 +86,34 @@ let baseScale = 0.5;      // 模型基础大小 (如果还是大，请调成 0.2
 let baseY = 1;         // 模型在画面中的上下位置 (负数越小越靠下)
 let distortion = 0;       // 点击产生的扭曲能量
 
-loader.load(modelUrl, function (gltf) {
-    dogModel = gltf.scene;
-    // 初始缩放
-    dogModel.scale.set(baseScale, baseScale, baseScale);
-    scene.add(dogModel);
-    console.log("模型加载成功！");
-}, undefined, function (error) {
-    console.error("加载失败：", error);
-});
+loader.load(modelUrl,
+    function (gltf) {
+        dogModel = gltf.scene;
+        // 初始缩放
+        dogModel.scale.set(baseScale, baseScale, baseScale);
+        scene.add(dogModel);
+        console.log("✅ 3D模型加载成功！");
+    },
+    // 加载进度回调
+    function (xhr) {
+        console.log(`模型加载进度: ${(xhr.loaded / xhr.total * 100).toFixed(2)}%`);
+    },
+    // 错误回调
+    function (error) {
+        console.error("❌ 3D模型加载失败：", error);
+        console.error("可能的原因：");
+        console.error("1. 文件路径错误：", modelUrl);
+        console.error("2. 文件不存在或权限问题");
+        console.error("3. Three.js GLTFLoader版本不兼容");
+        console.error("4. 网络请求被阻止");
+
+        // 显示用户友好的错误提示
+        const aiText = document.getElementById('aiText');
+        if (aiText) {
+            aiText.innerText = "3D模型加载失败，但聊天功能仍然可用。请检查控制台查看详细错误。";
+        }
+    }
+);
 
 // ==========================================
 // 5. 动画循环 (核心逻辑)
