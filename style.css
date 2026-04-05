@@ -30,7 +30,10 @@ body {
 /* 金毛下方的光晕 */
 .glow {
     position: absolute; width: 400px; height: 400px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+    /* background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%); */
+    background: radial-gradient(circle, rgba(255, 200, 50, 0.15) 0%, transparent 60%);
+    pointer-events: none; 
+    mix-blend-mode: screen; /* 让光晕更通透 */
 }
 
 .dog-avatar {
@@ -46,6 +49,7 @@ body {
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     margin-bottom: 40px;
+    animation: fadeIn 1s ease-out;/* 增加这一行 */
 }
 
 .ai-text { font-size: 20px; margin-bottom: 10px; line-height: 1.5; }
@@ -66,3 +70,8 @@ button {
     background: white; color: black; border: none; padding: 0 25px;
     border-radius: 30px; cursor: pointer; font-weight: bold;
 }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
