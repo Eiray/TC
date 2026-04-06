@@ -29,6 +29,11 @@ app.use(cors({
             "http://127.0.0.1:3000",
             // 生产环境 - Vercel前端
             "https://dchat-gamma.vercel.app",
+            // 新增：自定义域名
+            "https://www.tcyx.love",
+            "https://tcyx.love",
+            "http://www.tcyx.love",  // 支持HTTP
+            "http://tcyx.love",      // 支持HTTP
             // 从环境变量添加的域名
             ...envAllowedOrigins
         ];

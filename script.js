@@ -8,10 +8,25 @@ const API_CONFIG = {
     production: 'https://tc-tqaf.onrender.com'
 };
 
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE = isLocalhost ? API_CONFIG.development : API_CONFIG.production;
+const getAPIBase = () => {
+    const hostname = window.location.hostname;
 
-console.log("🚀 环境初始化:", { API_BASE, isLocalhost });
+    // 本地开发环境
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return API_CONFIG.development;
+    }
+
+    // 自定义域名环境 - 使用生产API
+    if (hostname === 'www.tcyx.love' || hostname === 'tcyx.love') {
+        return API_CONFIG.production;
+    }
+
+    // 其他情况（如Vercel部署）也使用生产API
+    return API_CONFIG.production;
+};
+
+const API_BASE = getAPIBase();
+console.log("🚀 环境初始化:", { hostname: window.location.hostname, API_BASE });
 
 /**
  * ==========================================
