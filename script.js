@@ -179,10 +179,20 @@ async function handleChat() {
     } catch (err) {
         console.error("❌ 前端错误:", err.message);
 
-        // 详细的错误分类
+        // 详细的错误分类和诊断
         let errorMessage = err.message;
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
         if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-            errorMessage = '网络连接失败，请检查服务器是否运行或网络连接';
+            // 更详细的网络错误诊断
+            if (isAndroid) {
+                errorMessage = '网络连接失败（Android设备）。\n可能原因：\n1. 服务器在国内访问受限\n2. 请尝试使用VPN\n3. 检查网络设置';
+            } else if (isIOS) {
+                errorMessage = '网络连接失败（iOS设备）。请检查网络连接或尝试切换WiFi/蜂窝数据';
+            } else {
+                errorMessage = '网络连接失败，请检查网络或服务器状态';
+            }
         } else if (err.message.includes('CORS')) {
             errorMessage = '跨域访问被拒绝，请检查CORS配置';
         } else if (err.message.includes('服务器错误')) {
@@ -190,7 +200,23 @@ async function handleChat() {
         }
 
         aiText.innerText = `出错了：${errorMessage}`;
-        console.error("详细错误信息:", { err, response, API_BASE });
+        console.error("详细错误信息:", {
+            err,
+            response,
+            API_BASE,
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            isAndroid,
+            isIOS
+        });
+
+        // 在控制台输出网络诊断信息
+        console.log("🔍 网络诊断:", {
+            "API地址": API_BASE,
+            "当前域名": window.location.hostname,
+            "协议": window.location.protocol,
+            "设备类型": isAndroid ? "Android" : (isIOS ? "iOS" : "其他")
+        });
     }
 }
 
