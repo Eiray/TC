@@ -70,6 +70,14 @@ const API_URL = "https://api.deepseek.com/chat/completions";
 let requestCount = 0;
 setInterval(() => requestCount = 0, 60000); // 每分钟重置
 
+// 显式处理OPTIONS预检请求
+app.options('/chat', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.status(200).end();
+});
+
 app.post('/chat', async (req, res) => {
     // 注意：CORS中间件已在第9-14行配置，此处无需重复检查
     // 保留限流和API逻辑，移除重复的来源检查
